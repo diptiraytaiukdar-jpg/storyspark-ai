@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>StorySpark AI — Viral YouTube Shorts Script Generator</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              950: '#07040d',
+              900: '#0f091e',
+              850: '#150c2a',
+              800: '#1e113c',
+              700: '#381e72',
+              600: '#6b21a8',
+              500: '#9333ea',
+              400: '#c084fc',
+              300: '#e9d5ff'
+            }
+          },
+          boxShadow: {
+            'glow': '0 0 25px -5px rgba(168, 85, 247, 0.35)',
+            'glow-sm': '0 0 15px -3px rgba(168, 85, 247, 0.25)'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #07040d; }
+    ::-webkit-scrollbar-thumb { background: #2e1a53; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9333ea; }
+  </style>
+</head>
+<body class="bg-brand-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white">
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-brand-500 text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-full shadow-glow transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2">
+    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+    <span id="toast-msg">Copied to clipboard!</span>
+  </div>
+
+  <!-- Mobile Header -->
+  <header class="sticky top-0 z-40 bg-brand-950/80 backdrop-blur-md border-b border-brand-800/60 px-4 py-3">
+    <div class="max-w-xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-brand-500 to-fuchsia-400 flex items-center justify-center shadow-glow">
+          <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-200 via-fuchsia-200 to-purple-400">StorySpark AI</h1>
+          <p class="text-[10px] text-brand-300/70 font-medium tracking-wide uppercase">Shorts & Reels Engine</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="toggle-source-btn" class="text-xs bg-brand-900 border border-brand-700/50 hover:border-brand-500 text-brand-300 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="mode-label">AI Mode</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-xl w-full mx-auto p-4 space-y-6">
+
+    <!-- Hero / Promo Card -->
+    <div class="p-4 rounded-2xl bg-gradient-to-br from-brand-900/90 via-brand-850 to-brand-950 border border-brand-700/40 relative overflow-hidden shadow-glow-sm">
+      <div class="absolute -right-8 -top-8 w-32 h-32 bg-brand-500/10 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="relative z-10">
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30 uppercase tracking-wider">Mobile-First Creator Suite</span>
+        <h2 class="text-lg font-bold mt-2 text-white">Turn 1 Line into a Viral Short</h2>
+        <p class="text-xs text-slate-300/80 mt-1">Generates hook, narrator script, pacing timestamps, and midjourney/SD image prompts designed for 9:16 retention.</p>
+        <button id="quick-sample-btn" class="mt-3 text-xs font-semibold text-brand-300 hover:text-white flex items-center gap-1.5 group">
+          <i data-lucide="wand-2" class="w-3.5 h-3.5 text-brand-400 group-hover:rotate-12 transition-transform"></i>
+          Load viral horror sample
+        </button>
+      </div>
+    </div>
+
+    <!-- Generator Input Form -->
+    <form id="generator-form" class="space-y-4 bg-brand-900/40 backdrop-blur-sm p-4 rounded-2xl border border-brand-800/80 shadow-inner">
+      
+      <!-- Story Idea Input -->
+      <div>
+        <label for="prompt" class="block text-xs font-semibold text-brand-200 mb-1.5 flex justify-between">
+          <span>Your Premise or Core Hook</span>
+          <span class="text-slate-500 font-normal text-[11px]" id="char-counter">0/240</span>
+        </label>
+        <textarea id="prompt" rows="3" maxlength="240" required placeholder="e.g., A cursed camera that photographs people 3 seconds before they vanish..."
+          class="w-full bg-brand-950/80 border border-brand-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition resize-none"></textarea>
+      </div>
+
+      <!-- Genre Selector -->
+      <div>
+        <label class="block text-xs font-semibold text-brand-200 mb-2">Select Genre</label>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <label class="cursor-pointer">
+            <input type="radio" name="genre" value="Horror" class="peer sr-only" checked />
+            <div class="p-2.5 rounded-xl border border-brand-800 peer-checked:border-brand-500 peer-checked:bg-brand-800/60 peer-checked:text-white text-slate-300 flex items-center justify-center gap-2 hover:bg-brand-850/60 transition">
+              <span>👻</span>
+              <span class="font-medium">Horror / Mystery</span>
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="genre" value="Anime" class="peer sr-only" />
+            <div class="p-2.5 rounded-xl border border-brand-800 peer-checked:border-brand-500 peer-checked:bg-brand-800/60 peer-checked:text-white text-slate-300 flex items-center justify-center gap-2 hover:bg-brand-850/60 transition">
+              <span>⚡</span>
+              <span class="font-medium">Anime / Shonen</span>
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="genre" value="Fantasy" class="peer sr-only" />
+            <div class="p-2.5 rounded-xl border border-brand-800 peer-checked:border-brand-500 peer-checked:bg-brand-800/60 peer-checked:text-white text-slate-300 flex items-center justify-center gap-2 hover:bg-brand-850/60 transition">
+              <span>🗡️</span>
+              <span class="font-medium">Dark Fantasy</span>
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="genre" value="Comedy" class="peer sr-only" />
+            <div class="p-2.5 rounded-xl border border-brand-800 peer-checked:border-brand-500 peer-checked:bg-brand-800/60 peer-checked:text-white text-slate-300 flex items-center justify-center gap-2 hover:bg-brand-850/60 transition">
+              <span>🎭</span>
+              <span class="font-medium">Absurd Comedy</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Duration Selector -->
+      <div>
+        <label class="block text-xs font-semibold text-brand-200 mb-2">Target Duration</label>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <label class="cursor-pointer">
+            <input type="radio" name="duration" value="30" class="peer sr-only" checked />
+            <div class="p-2 rounded-xl border border-brand-800 peer-checked:border-brand-500 peer-checked:bg-brand-800/60 peer-checked:text-white text-slate-300 flex flex-col items-center justify-center hover:bg-brand-850/60 transition">
+              <span class="font-bold">30 Seconds</span>
+              <span class="text-[10px] text-slate-400">3 scenes • ~75 words</span>
+            </div>
+          </label>
+          <label class="cursor-pointer">
+            <input type="radio" name="duration" value="60" class="peer sr-only" />
+            <div class="p-2 rounded-xl border border-brand-800 peer-checked:border-brand-500 peer-checked:bg-brand-800/60 peer-checked:text-white text-slate-300 flex flex-col items-center justify-center hover:bg-brand-850/60 transition">
+              <span class="font-bold">60 Seconds</span>
+              <span class="text-[10px] text-slate-400">5 scenes • ~145 words</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Error Banner -->
+      <div id="error-box" class="hidden p-3 rounded-xl bg-red-950/70 border border-red-500/50 text-red-200 text-xs flex items-start gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 text-red-400 shrink-0 mt-0.5"></i>
+        <span id="error-message">Something went wrong. Please check your inputs.</span>
+      </div>
+
+      <!-- Submit Button -->
+      <button id="generate-btn" type="submit" class="w-full py-3.5 px-4 bg-gradient-to-r from-brand-600 via-brand-500 to-purple-600 hover:from-brand-500 hover:to-purple-500 active:scale-[0.99] text-white text-sm font-semibold rounded-xl shadow-glow transition flex items-center justify-center gap-2">
+        <i data-lucide="zap" class="w-4 h-4 fill-white"></i>
+        <span>Generate YouTube Short Kit</span>
+      </button>
+    </form>
+
+    <!-- Loading Skeleton Placeholder -->
+    <div id="loading-state" class="hidden space-y-4 animate-pulse">
+      <div class="p-4 rounded-2xl bg-brand-900/30 border border-brand-800/50 space-y-3">
+        <div class="h-4 bg-brand-800/60 rounded-md w-1/3"></div>
+        <div class="h-3 bg-brand-800/40 rounded-md w-full"></div>
+        <div class="h-3 bg-brand-800/40 rounded-md w-4/5"></div>
+      </div>
+      <div class="p-4 rounded-2xl bg-brand-900/30 border border-brand-800/50 space-y-3">
+        <div class="h-4 bg-brand-800/60 rounded-md w-1/4"></div>
+        <div class="h-16 bg-brand-800/40 rounded-lg w-full"></div>
+      </div>
+      <p class="text-center text-xs text-brand-400 tracking-wide font-medium animate-bounce">⚡ Sparking your short scenes...</p>
+    </div>
+
+    <!-- Output Display Area -->
+    <div id="output-container" class="hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+          Generated Production Kit
+        </h3>
+        <button id="copy-all-btn" class="text-xs bg-brand-850 hover:bg-brand-800 border border-brand-700 px-3 py-1.5 rounded-lg text-brand-200 hover:text-white flex items-center gap-1.5 transition shadow-sm">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span>Copy Complete Kit</span>
+        </button>
+      </div>
+
+      <!-- 1. High Concept & Hook -->
+      <div class="p-4 rounded-2xl bg-brand-900/50 border border-brand-800/80 relative">
+        <div class="flex justify-between items-start mb-2">
+          <span class="text-[11px] font-bold text-purple-400 uppercase tracking-wider">Short Hook & Core Story</span>
+          <button class="copy-btn text-slate-400 hover:text-white" data-target="out-hook" title="Copy hook">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <p id="out-hook" class="text-sm text-slate-200 leading-relaxed font-normal"></p>
+      </div>
+
+      <!-- 2. Full Narration / Voiceover Script -->
+      <div class="p-4 rounded-2xl bg-brand-900/50 border border-brand-800/80 relative">
+        <div class="flex justify-between items-start mb-2">
+          <div>
+            <span class="text-[11px] font-bold text-purple-400 uppercase tracking-wider">Voiceover Narration (Read Pacing)</span>
+            <p class="text-[10px] text-slate-400">Optimized for ElevenLabs or CapCut TTS</p>
+          </div>
+          <button class="copy-btn text-slate-400 hover:text-white" data-target="out-narration" title="Copy voiceover">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <div id="out-narration" class="text-xs sm:text-sm text-slate-200 bg-brand-950/70 p-3 rounded-xl font-mono whitespace-pre-wrap leading-relaxed border border-brand-800/40"></div>
+      </div>
+
+      <!-- 3. Scene Breakdown & Image Prompts -->
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-[11px] font-bold text-purple-400 uppercase tracking-wider">Scene-by-Scene Visual Breakdown</span>
+          <span class="text-[10px] text-slate-400">9:16 Vertical Prompts</span>
+        </div>
+        <div id="out-scenes" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <!-- About & How it Works Section -->
+    <section class="mt-8 pt-6 border-t border-brand-800/60 space-y-3">
+      <h3 class="text-xs font-bold text-brand-300 uppercase tracking-wider">About StorySpark AI</h3>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        StorySpark AI is engineered specifically for solo YouTube Shorts, TikTok, and Instagram Reels creators. Instead of generic stories, it generates tightly-paced vertical cues, cliffhangers, and Midjourney image prompts calibrated for high audience retention.
+      </p>
+      
+      <!-- Security Callout Box -->
+      <div class="p-3.5 rounded-xl bg-purple-950/40 border border-purple-800/40 text-[11px] text-purple-200 space-y-1">
+        <div class="flex items-center gap-1.5 font-bold text-purple-300">
+          <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+          <span>Production Security Guarantee</span>
+        </div>
+        <p class="text-purple-300/80 leading-normal">
+          Client code never contains master API keys. StorySpark runs locally in Instant Demo mode or connects via authenticated, serverless edge functions.
+        </p>
+      </div>
+    </section>
+
+    <!-- Footer & Links -->
+    <footer class="pt-4 pb-8 border-t border-brand-900 text-center text-xs text-slate-500 space-y-3">
+      <div class="flex items-center justify-center gap-4 text-slate-400">
+        <button id="open-privacy-modal" class="hover:text-brand-300 transition underline underline-offset-2">Privacy Policy</button>
+        <span>•</span>
+        <button id="open-contact-modal" class="hover:text-brand-300 transition underline underline-offset-2">Contact Support</button>
+      </div>
+      <p class="text-[11px]">© <span id="year"></span> StorySpark AI. Built for creators.</p>
+    </footer>
+  </main>
+
+  <!-- Privacy Policy Modal -->
+  <div id="privacy-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-brand-900 border border-brand-700/60 max-w-md w-full p-6 rounded-2xl space-y-4 shadow-glow">
+      <div class="flex justify-between items-center">
+        <h4 class="text-sm font-bold text-white">Privacy Policy</h4>
+        <button class="close-modal text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="text-xs text-slate-300 space-y-2 max-h-60 overflow-y-auto pr-1">
+        <p><strong>1. Data Collection:</strong> StorySpark AI does not sell, rent, or monetize your creative story ideas. When in demo mode, your data does not leave your local browser session.</p>
+        <p><strong>2. AI Processing:</strong> In live server-connected mode, your story prompts are sent over encrypted TLS to stateless API endpoints for the sole purpose of generating your script.</p>
+        <p><strong>3. Content Ownership:</strong> You retain 100% full commercial copyright to all output stories, scripts, and prompts generated with the tool.</p>
+      </div>
+      <button class="close-modal w-full py-2 bg-brand-800 text-white rounded-xl text-xs font-semibold hover:bg-brand-700 transition">Got it</button>
+    </div>
+  </div>
+
+  <!-- Contact Modal -->
+  <div id="contact-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-brand-900 border border-brand-700/60 max-w-md w-full p-6 rounded-2xl space-y-4 shadow-glow">
+      <div class="flex justify-between items-center">
+        <h4 class="text-sm font-bold text-white">Contact & Support</h4>
+        <button class="close-modal text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="text-xs text-slate-300 space-y-3">
+        <p>Have an idea or need enterprise batch script generation for your Shorts automation channel?</p>
+        <div class="p-3 bg-brand-950 rounded-lg border border-brand-800/80 font-mono text-[11px] text-brand-300">
+          creator-support@storyspark.example.com
+        </div>
+      </div>
+      <button class="close-modal w-full py-2 bg-brand-800 text-white rounded-xl text-xs font-semibold hover:bg-brand-700 transition">Close</button>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // App State
+    let isLiveMode = true; // Default to the secure Netlify AI endpoint; toggle for demo mode
+
+    // DOM Elements
+    const form = document.getElementById('generator-form');
+    const promptInput = document.getElementById('prompt');
+    const charCounter = document.getElementById('char-counter');
+    const generateBtn = document.getElementById('generate-btn');
+    const loadingState = document.getElementById('loading-state');
+    const outputContainer = document.getElementById('output-container');
+    const errorBox = document.getElementById('error-box');
+    const errorMessage = document.getElementById('error-message');
+    const toast = document.getElementById('toast');
+    const toastMsg = document.getElementById('toast-msg');
+    const quickSampleBtn = document.getElementById('quick-sample-btn');
+    const toggleSourceBtn = document.getElementById('toggle-source-btn');
+    const modeLabel = document.getElementById('mode-label');
+
+    // Modals
+    const privacyModal = document.getElementById('privacy-modal');
+    const contactModal = document.getElementById('contact-modal');
+    document.getElementById('open-privacy-modal').onclick = () => privacyModal.classList.remove('hidden');
+    document.getElementById('open-contact-modal').onclick = () => contactModal.classList.remove('hidden');
+    document.querySelectorAll('.close-modal').forEach(btn => {
+      btn.onclick = () => {
+        privacyModal.classList.add('hidden');
+        contactModal.classList.add('hidden');
+      };
+    });
+
+    // Character Count Listener
+    promptInput.addEventListener('input', (e) => {
+      charCounter.textContent = `${e.target.value.length}/240`;
+    });
+
+    // Toast Notification helper
+    function showToast(msg) {
+      toastMsg.textContent = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2200);
+    }
+
+    // Toggle Backend vs Demo Mode
+    toggleSourceBtn.addEventListener('click', () => {
+      isLiveMode = !isLiveMode;
+      if (isLiveMode) {
+        modeLabel.textContent = 'AI Mode (/api/generate)';
+        showToast('Switched to Live API backend endpoint');
+      } else {
+        modeLabel.textContent = 'Demo Mode (Client Mock)';
+        showToast('Switched to Built-in Demo Engine');
+      }
+    });
+
+    // Sample Demo Loader
+    quickSampleBtn.addEventListener('click', () => {
+      promptInput.value = "An antique elevator in Tokyo that only opens on floors that don't exist.";
+      charCounter.textContent = `${promptInput.value.length}/240`;
+      document.querySelector('input[name="genre"][value="Horror"]').checked = true;
+      document.querySelector('input[name="duration"][value="30"]').checked = true;
+      form.dispatchEvent(new Event('submit'));
+    });
+
+    // Generate Script Submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const prompt = promptInput.value.trim();
+      const genre = document.querySelector('input[name="genre"]:checked').value;
+      const duration = parseInt(document.querySelector('input[name="duration"]:checked').value);
+
+      if (!prompt) {
+        showError("Please enter a story premise or hook.");
+        return;
+      }
+
+      hideError();
+      setLoading(true);
+
+      try {
+        let result;
+        if (isLiveMode) {
+          // Connects to secure server-side endpoint (Part 2)
+          const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, genre, duration })
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || 'AI backend is not ready yet. Deploy the Netlify function and add GEMINI_API_KEY in Netlify environment variables.');
+          }
+          result = await res.json();
+        } else {
+          // Robust client-side mock for instant testing
+          result = await generateMockShort(prompt, genre, duration);
+        }
+
+        renderOutput(result);
+        outputContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (err) {
+        showError(err.message || "Failed to generate script. Check console or backend connection.");
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    function setLoading(isLoading) {
+      if (isLoading) {
+        generateBtn.disabled = true;
+        generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        loadingState.classList.remove('hidden');
+        outputContainer.classList.add('hidden');
+      } else {
+        generateBtn.disabled = false;
+        generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        loadingState.classList.add('hidden');
+      }
+    }
+
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorBox.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorBox.classList.add('hidden');
+    }
+
+    // Escape model/user text before inserting it into HTML templates.
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[ch]));
+    }
+
+    // Render output into UI
+    function renderOutput(data) {
+      document.getElementById('out-hook').textContent = data.storySummary;
+      document.getElementById('out-narration').textContent = data.fullNarration;
+
+      const scenesContainer = document.getElementById('out-scenes');
+      scenesContainer.innerHTML = '';
+
+      data.scenes.forEach((scene, idx) => {
+        const sceneEl = document.createElement('div');
+        sceneEl.className = 'p-3.5 rounded-xl bg-brand-900/60 border border-brand-800/80 space-y-2';
+        sceneEl.innerHTML = `
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-brand-300">Scene ${idx + 1} (${escapeHtml(scene.timecode)})</span>
+            <span class="text-[10px] bg-brand-950 px-2 py-0.5 rounded text-purple-300 border border-brand-800">${escapeHtml(scene.pacing)}</span>
+          </div>
+          <p class="text-xs text-slate-300 font-medium"><strong>Visual:</strong> ${escapeHtml(scene.visualAction)}</p>
+          <div class="bg-brand-950/80 p-2.5 rounded-lg border border-brand-800/50 relative group">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-[10px] uppercase font-bold text-slate-500">Image / Midjourney Prompt</span>
+              <button class="copy-scene-btn text-slate-400 hover:text-white" data-prompt="${escapeQuotes(scene.imagePrompt)}">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <p class="text-[11px] font-mono text-purple-200 select-all">${escapeHtml(scene.imagePrompt)}</p>
+          </div>
+        `;
+        scenesContainer.appendChild(sceneEl);
+      });
+
+      // Bind individual copy buttons
+      bindCopyButtons(data);
+      lucide.createIcons();
+      outputContainer.classList.remove('hidden');
+    }
+
+    function escapeQuotes(str) {
+      return str.replace(/"/g, '&quot;');
+    }
+
+    // Copying logic
+    function bindCopyButtons(data) {
+      // Copy single fields
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.onclick = () => {
+          const targetId = btn.dataset.target;
+          const text = document.getElementById(targetId).textContent;
+          navigator.clipboard.writeText(text);
+          showToast('Copied to clipboard!');
+        };
+      });
+
+      // Copy scene prompt
+      document.querySelectorAll('.copy-scene-btn').forEach(btn => {
+        btn.onclick = () => {
+          const prompt = btn.dataset.prompt;
+          navigator.clipboard.writeText(prompt);
+          showToast('Copied image prompt!');
+        };
+      });
+
+      // Copy All Kit
+      document.getElementById('copy-all-btn').onclick = () => {
+        const fullKit = `=== STORYSPARK AI PRODUCTION KIT ===\n\n` +
+          `[HOOK & STORY]\n${data.storySummary}\n\n` +
+          `[NARRATION SCRIPT]\n${data.fullNarration}\n\n` +
+          `[SCENE BREAKDOWN & IMAGE PROMPTS]\n` +
+          data.scenes.map((s, i) => `Scene ${i+1} (${s.timecode}):\nAction: ${s.visualAction}\nPrompt: ${s.imagePrompt}`).join('\n\n');
+        
+        navigator.clipboard.writeText(fullKit);
+        showToast('Complete short kit copied!');
+      };
+    }
+
+    // Realistic Demo Generator (Emulates AI output locally)
+    async function generateMockShort(prompt, genre, duration) {
+      // Simulate realistic AI generation latency (1.2s)
+      await new Promise(r => setTimeout(r, 1200));
+
+      const is30Sec = duration === 30;
+
+      const genreKeywords = {
+        Horror: { tone: 'eerie, low-key lighting, liminal dread', style: 'cinematic 35mm film still, analog horror, ultra-detailed 8k, photorealistic --ar 9:16' },
+        Anime: { tone: 'hyper-dynamic, shonen combat, vivid lighting', style: 'MAPPA style anime cinematic keyframe, trending on pixiv, dramatic angles --ar 9:16' },
+        Fantasy: { tone: 'mystical, dark atmospheric, eldritch aura', style: 'dark fantasy concept art, Unreal Engine 5 render, volumetrics --ar 9:16' },
+        Comedy: { tone: 'exaggerated, slapstick, expressive expressions', style: 'vibrant cartoonish render, quirky cinematic lighting, wide angle --ar 9:16' }
+      }[genre];
+
+      const sceneCount = is30Sec ? 3 : 5;
+      const scenes = [];
+
+      if (is30Sec) {
+        scenes.push({
+          timecode: '0:00 - 0:08',
+          pacing: 'The Hook',
+          visualAction: `Extreme close up on protagonist noticing something wrong. Fast vertical camera push-in.`,
+          imagePrompt: `${prompt}, extreme vertical portrait, initial inciting incident, ${genreKeywords.tone}, ${genreKeywords.style}`
+        });
+        scenes.push({
+          timecode: '0:08 - 0:22',
+          pacing: 'Escalation',
+          visualAction: `Rapid sequence revealing the consequences. Dynamic movement, tension rising.`,
+          imagePrompt: `${prompt}, escalating tension, surreal atmosphere, intense shadows, ${genreKeywords.tone}, ${genreKeywords.style}`
+        });
+        scenes.push({
+          timecode: '0:22 - 0:30',
+          pacing: 'Cliffhanger',
+          visualAction: `Sudden twist revelation. Protagonist makes eye contact straight into the viewer lens.`,
+          imagePrompt: `${prompt}, unexpected twist, shocking final frame, vertical frame, cinematic climax, ${genreKeywords.tone}, ${genreKeywords.style}`
+        });
+      } else {
+        const intervals = ['0:00 - 0:10', '0:10 - 0:25', '0:25 - 0:40', '0:40 - 0:52', '0:52 - 1:00'];
+        const pacingLabels = ['The Hook', 'Inciting Incident', 'The Turning Point', 'The Climax', 'The Cliffhanger Loop'];
+        for (let i = 0; i < 5; i++) {
+          scenes.push({
+            timecode: intervals[i],
+            pacing: pacingLabels[i],
+            visualAction: `Phase ${i+1}: Action focused on "${prompt.substring(0, 30)}..." with dramatic 9:16 composition.`,
+            imagePrompt: `${prompt}, scene ${i+1}, ${genreKeywords.tone}, dynamic vertical framing, ${genreKeywords.style}`
+          });
+        }
+      }
+
+      const narration = is30Sec 
+        ? `[0:00 - 0:08] You were never supposed to find this.\nIt started the moment you noticed: ${prompt}.\n\n[0:08 - 0:22] At first, it seemed like a harmless glitch. But by the time the shadows shifted, you realized the pattern wasn't random.\n\n[0:22 - 0:30] Look behind you right now. Because whatever you saw... saw you first.`
+        : `[0:00 - 0:10] Nobody believes the story until it happens to them. It all revolved around one thing: ${prompt}.\n\n[0:10 - 0:25] The first clue was subtle. An echo where there shouldn't have been a sound. A reflection that lagged half a second behind.\n\n[0:25 - 0:40] By day three, there was no denying it. Every single person who touched it had vanished without a trace.\n\n[0:40 - 0:52] And tonight? You just heard the exact same knocking sound at your front door.\n\n[0:52 - 1:00] Subscribe before you answer it... because the loop just restarted.`;
+
+      return {
+        storySummary: `A viral ${duration}s ${genre.toLowerCase()} short exploring: "${prompt}". Designed with high visual retention hooks and a seamless final loop to boost Shorts playback loops.`,
+        fullNarration: narration,
+        scenes: scenes
+      };
+    }
+  </script>
+</body>
+</html>
